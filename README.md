@@ -31,6 +31,13 @@ The sensors ESP32 module uses this end point to send the data to it so that its 
     }
     headers = {"Plant-Id": plant_id}
     requests.post(url + "AddEntry", headers = headers, json=payload).json() 
+    
+    #Sample Sucessful Response
+    >>> {
+           "status":200,
+           "response":"Entry Added",
+           "entry count":7
+        }
     ```
     
 ### Endpoint: `/ActuatorData`
@@ -49,6 +56,14 @@ The sensors ESP32 module uses this end point to send the data to it so that its 
     #A sample of the code that gets the data that is sent to the actuator
     headers = {"Plant-Id": plant_id}
     requests.get(url + "ActuatorData", headers = headers, json=payload).json()
+    
+    #Sample Sucessful Response
+    >>> {
+           "status":200,
+           "override":false,
+           "Lamp Intensity State":10,
+           "Water Pump State":true
+        }
     ```
 - **Notes:** *This method must first check if there has been an override request made to the actuators by the smartphone app. if such a thing has been made, then the server trusts the user's decision for a given amount of time and then goes back again to regulate the plant state. To change how long an override request is valid, the* `override_validity` *variable in the* `override_data()` *function is changed to showcase such change.*
     
@@ -67,12 +82,18 @@ The sensors ESP32 module uses this end point to send the data to it so that its 
     #Removing the override request made to the server for a specific plant_id
     headers = {"Plant-Id": plant_id}
     requests.delete(url + "RemoveOverride", headers = headers).json()
+    
+    #Sample Sucessful Response
+    >>> {
+           "status":200,
+           "response":"Records have been removed sucessfully",
+           "count":0
+        }
     ```
     
 ### Endpoint: `/Override`
 
 - **Description:** This method is used to send an override request to server. Bascially telling the server "I want to have control over my own plant, you dont worry about regulating anything" In this case, the user assumes full control over the plant until the override request expires
-
 - **Method:** Post
 - **Expected Headers:**
     -  **Plant-Id:** a unique identifier to each plant to identify the plant in the database and to ensure that multiple plants can be supported by the server.
@@ -91,4 +112,10 @@ The sensors ESP32 module uses this end point to send the data to it so that its 
     }
     headers = {"Plant-Id": plant_id}
     requests.post(url + "Override", headers = headers, json=payload).json()
+    
+    #Sample Sucessful Response
+    >>> {
+           "status":200,
+           "response":"override request made"
+        }
     ```
