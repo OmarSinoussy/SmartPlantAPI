@@ -235,7 +235,3 @@ def RemoveOverride(request):
 
     else:
         return JsonResponse({"status": 400, "response": generate_error_message('Endpoint only accepts delete requests')}, status = 400)
-
-'''
-TODO: Override has been changed for the actuator_data method. Check on it since the current implementation will cause bugs
-'''
