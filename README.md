@@ -8,6 +8,8 @@ As a very quick rundown of this project, this project uses Django with an SQL li
 
 ### Endpoint: `/AddEntry`
 
+- **Description:** This is the end point that is responsible for the addition of the entries to the database. 
+The sensors ESP32 module uses this end point to send the data to it so that its stored in the database 
 - **Method:** Post
 - **Expected Headers:**
     -  **Plant-Id:** a unique identifier to each plant to identify the plant in the database and to ensure that multiple plants can be supported by the server.
@@ -33,6 +35,7 @@ As a very quick rundown of this project, this project uses Django with an SQL li
     
 ### Endpoint: `/ActuatorData`
 
+- **Description:** This is the main endpoint used to provide data to the actuator side of things. This endpint is typically only used by the ESP32 module connected to the actuators. A different endpoint is used for the mobile application.
 - **Method:** Get
 - **Expected Headers:**
     -  **Plant-Id:** a unique identifier to each plant to identify the plant in the database and to ensure that multiple plants can be supported by the server.
@@ -47,9 +50,11 @@ As a very quick rundown of this project, this project uses Django with an SQL li
     headers = {"Plant-Id": plant_id}
     requests.get(url + "ActuatorData", headers = headers, json=payload).json()
     ```
+- **Notes:** *This method must first check if there has been an override request made to the actuators by the smartphone app. if such a thing has been made, then the server trusts the user's decision for a given amount of time and then goes back again to regulate the plant state. To change how long an override request is valid, the* `override_validity` *variable in the* `override_data()` *function is changed to showcase such change.*
     
 ### Endpoint: `/RemoveOverride`
 
+- **Description:** This is an API endpoint that removes all of the override requests made to the server for a specific plant id.
 - **Method:** Delete
 - **Expected Headers:**
     -  **Plant-Id:** a unique identifier to each plant to identify the plant in the database and to ensure that multiple plants can be supported by the server.
@@ -65,6 +70,8 @@ As a very quick rundown of this project, this project uses Django with an SQL li
     ```
     
 ### Endpoint: `/Override`
+
+- **Description:** This method is used to send an override request to server. Bascially telling the server "I want to have control over my own plant, you dont worry about regulating anything" In this case, the user assumes full control over the plant until the override request expires
 
 - **Method:** Post
 - **Expected Headers:**
