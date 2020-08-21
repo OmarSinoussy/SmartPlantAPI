@@ -19,7 +19,7 @@ def generate_error_message(error_message):
         |- (string): returns a string of the error message
     '''
 
-    github_page = "https://www.github.com/smartPlantAPI"
+    github_page = "https://github.com/OmarSinoussy/SmartPlantAPI"
     return f"{error_message}. Please visit {github_page} for API documentation and more information on this error"
 
 def override_data(plant_id):
