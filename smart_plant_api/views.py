@@ -245,9 +245,9 @@ def app_basic_data(request):
             |- Plant-Id: a unique identifier to each plant to identify the plant in the database and to ensure 
         Expected Payload: None
         Expected Response:
-            |- status: 200 if the retrival is done, 500 if it fails
+            |- status: 200 if the retrieval is done, 500 if it fails
             |- metadata: a dictionary of some metadata on the request
-                |- last_reading_time: the time that the last reading was made. Converted to the timezone of the person making the request
+                |- last_reading_time: the time that the last reading was made. Converted to the Malaysian timezone.
             |- plant_state:
                 |- state: a verbal state of the plant, may either be happy, sad, or hungry
                 |- description: a description of the above state
@@ -324,7 +324,7 @@ def app_basic_data(request):
             {
                 'title': 'Water Tank Report',
                 'header_text': 'Water Level',
-                'value': "-".join([one for one in response_dict['sensor_readings'][2]['readings']]),
+                'value': " - ".join([one for one in response_dict['sensor_readings'][2]['readings']]),
                 'description': "With the current water level in the tank, it can last for another 7 days without any intervension"
             },
             {
