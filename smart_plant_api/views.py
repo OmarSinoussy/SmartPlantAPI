@@ -1,10 +1,10 @@
-from django.shortcuts import render
+from django.conf import settings
 from django.utils import timezone
+from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from smart_plant_api.models import ReadingEntry, OverrideRequest
-import json, datetime
-from collections import defaultdict
+import json
 
 def generate_error_message(error_message):
     '''
@@ -89,6 +89,55 @@ def add_entry(request):
         return JsonResponse({"status":200, "response": "Entry Added", "entry count": entry_count})
     else:
         return JsonResponse({"status": 400, "response": generate_error_message("Endpoint only accepts post requests")}, status = 400)
+
+@csrf_exempt
+def remove_entries(request):
+    '''
+    This endpoint is reserved for removing all of the reading entries available for a plant. At the current moment of time, this is not
+    accicible to anybody except for the server admin, The remove requests require to be accepted by the admin via an input statement
+    
+    Note: This endpoint is not currently accisible to the public for public usage. It's only enabled when the server is in debug mode and is disabled
+          for the release version of the server-side code due to how dangerous it can be if left unattended
+    
+    Endpoint: /RemoveEntries
+
+    Delete:
+        Expected Headers:
+            |- Plant-Id: a unique identifier to each plant to identify the plant in the database and to ensure 
+        Expected Payload: None
+        Expected Response:
+            |- status: 200 If the entry has been removed sucessfully, 400 if the removal has failed
+            |- response: a verbal response of the status.
+            |- count: the number of entries avialble for this plant of this Plant-Id
+    '''
+    if not settings.DEBUG:
+        return JsonResponse({'status': 403,
+                            'response': 'This endpoint is only avialble in debug mode',
+                            'count': 'n/a'},
+                            status=403)
+
+    if request.method == "DELETE":
+        if request.headers.get('Plant-Id') == None:
+            return JsonResponse({'status': 400,
+                                'response': generate_error_message('No Plant-Id provided in the request header')},
+                                status = 400)
+
+        admin_response = input(f'A request has been made to delete entries for the plant with plant-id {request.headers.get("Plant-Id")}\nAccept this request? (y/n)').lower()
+        if 'y' in admin_response:
+            ReadingEntry.objects.filter(plant_id = request.headers.get('Plant-Id')).delete()
+            status = 200, 
+            response_message = 'Removal request has been accepted'
+        else:
+            status = 500, 
+            response_message = 'Removal request has been denied'
+
+        return JsonResponse({'status': status,
+                            'response': response_message,
+                            'count': len(ReadingEntry.objects.filter(plant_id = request.headers.get('Plant-Id')))},
+                            status=status)
+
+    else:
+        return JsonResponse({"status": 400, "response": generate_error_message('Endpoint only accepts delete requests')}, status = 400)
 
 def actuator_data(request):
     '''
