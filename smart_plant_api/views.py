@@ -6,8 +6,6 @@ from smart_plant_api.models import ReadingEntry, OverrideRequest
 import json, datetime
 from collections import defaultdict
 
-override_request = defaultdict(dict)
-
 def generate_error_message(error_message):
     '''
     A method used to generate error messages to provide more info in the error message with a high consistency
