@@ -22,6 +22,7 @@ urlpatterns = [
     path('AddEntry', smart_api_views.add_entry),
     path('RemoveEntries', smart_api_views.remove_entries),
     path('ActuatorData', smart_api_views.actuator_data),
+    path('AppBasicData', smart_api_views.app_basic_data),
     path('Override', smart_api_views.Override),
     path('RemoveOverride', smart_api_views.RemoveOverride),
 ]

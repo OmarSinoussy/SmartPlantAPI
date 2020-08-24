@@ -4,8 +4,9 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from smart_plant_api.models import ReadingEntry, OverrideRequest
-import json
+import json, collections, pytz
 
+#All of the following are helper methods
 def generate_error_message(error_message):
     '''
     A method used to generate error messages to provide more info in the error message with a high consistency
@@ -55,6 +56,37 @@ def override_data(plant_id):
         }
     }
 
+def calculate_actuator_values(light_intensity, soil_moisture):
+    '''
+    A method used to calculate the lamp_intensity_state, and the water_pump_state based on the light_intensity and the soil moisture
+
+    Arguments:
+        |- light_intensity: the amount of light that the plant is currently exposed to
+        |- soil_moisture: the amount of moisture currently in the soil
+
+    Returns
+        |- (tuple): a tuple of the (lamp_intensity_state, water_pump_state)
+    '''
+    lamp_intensity_state = 0
+    water_pump_state = False
+    
+    #Controlling the lamp intensity.
+    if 0 <= light_intensity < 25:
+        lamp_intensity_state = 100
+    elif 25 <= light_intensity < 50:
+        lamp_intensity_state = 75
+    elif 50 <= light_intensity < 75:
+        lamp_intensity_state = 50
+    elif 75 <= light_intensity < 100:
+        lamp_intensity_state = 10
+    
+    #Controlling the water pump.
+    if soil_moisture < 75:
+        water_pump_state = True
+    
+    return (lamp_intensity_state, water_pump_state)
+
+#All ofthe following are the views methods
 @csrf_exempt
 def add_entry(request):
     '''
@@ -189,26 +221,7 @@ def actuator_data(request):
                                     status = 400) 
 
             last_entry = entries[len(entries) - 1]  #the Django ORM rejects any negative indexing, so the only way to get he last index is to do entries[len(entries) - 1]
-            soil_moisture = last_entry.soil_moisture_reading
-            light_intensity = last_entry.light_intensity_reading
-            water_level = last_entry.water_level_reading
-
-            lamp_intensity_state = 0
-            water_pump_state = False
-
-            #Controlling the lamp intensity.
-            if 0 <= light_intensity < 25:
-                lamp_intensity_state = 100
-            elif 25 <= light_intensity < 50:
-                lamp_intensity_state = 75
-            elif 50 <= light_intensity < 75:
-                lamp_intensity_state = 50
-            elif 75 <= light_intensity < 100:
-                lamp_intensity_state = 10
-            
-            #Controlling the water pump.
-            if soil_moisture < 75:
-                water_pump_state = True
+            lamp_intensity_state, water_pump_state = calculate_actuator_values(last_entry.light_intensity_reading, last_entry.soil_moisture_reading)
         
             return JsonResponse({'status': 200, 
                                 'override': False, 
@@ -218,6 +231,121 @@ def actuator_data(request):
     else:
         return JsonResponse({"status": 400, "response": generate_error_message('Endpoint only accepts get requests')}, status = 400)
 
+def app_basic_data(request):
+    '''
+    This endpoint is responsible for providing all of the basic data about the plant to the smartphone application. This is data such as the latest sensor readings,
+    And some reports on the equipment and the water tank.
+
+    Note: the statistics endpoint is not this endpoint. Go through the documentation to find the endpoint used in the statistics 
+
+    Endpoint: /AppBasicData
+
+    Get:
+        Expected Headers:
+            |- Plant-Id: a unique identifier to each plant to identify the plant in the database and to ensure 
+        Expected Payload: None
+        Expected Response:
+            |- status: 200 if the retrival is done, 500 if it fails
+            |- metadata: a dictionary of some metadata on the request
+                |- last_reading_time: the time that the last reading was made. Converted to the timezone of the person making the request
+            |- plant_state:
+                |- state: a verbal state of the plant, may either be happy, sad, or hungry
+                |- description: a description of the above state
+            |- sensor_readings: an array of dictionaries containing data on the sensors. entries in this array follow the following format
+                |- name: the sensor name
+                |- description: a description of what this sensor is used for
+                |- readings: an array of the readings read by the sensor and all of the possible unit conversions
+            |- reports: an array of reports containing data on the equippment. Each report has the following format
+                |- title: the title of the given report
+                |- header_text: the header of the report
+                |- value: the values of the given report
+                |- description: a verbal description of the title and value of the report
+
+    Post: No post requests are allowed to this end point. A post request will result in a status 400 response
+    '''
+    response_dict = collections.defaultdict(dict)
+    if request.method == "GET":
+        if request.headers.get('Plant-Id') == None:
+            return JsonResponse({'status': 400,
+                                'response': generate_error_message('No Plant-Id provided in the request header')},
+                                status = 400)
+
+        latest_entry = ReadingEntry.objects.filter(plant_id = request.headers.get('Plant-Id')).order_by('-id')[0]
+        water_tank_max_level = 5
+
+        #Working on the metadata
+        response_dict['metadata']['last_reading_time'] = latest_entry.reading_date.astimezone(pytz.timezone('Asia/Kuala_Lumpur'))
+
+        #Working on the plant state
+        plant_state = {
+            'state': "",
+            'description': ""
+        }
+        
+        if latest_entry.soil_moisture_reading > 50 and latest_entry.light_intensity_reading > 50:
+            plant_state['state'] = "Happy"
+            plant_state['description'] = "Your plant is well watered, has adequate light exposure and is healthier than ever!"
+        elif latest_entry.soil_moisture_reading < 50:
+            plant_state['state'] = "Hungry"
+            plant_state['description'] += "Your plant requires more soil moisture content to continue healthy growth."
+        elif latest_entry.light_intensity_reading < 50:
+            plant_state['state'] = "Sad"
+            if plant_state['description'] == "":
+                plant_state['description'] = "Your plant requires more light in order for it to continue healthy growth."
+            else:
+                plant_state['description'].replace(' to continue healthy growth.', 'and more light in order for it to continue healthy growth.')
+
+        response_dict['plant_state'] = plant_state
+
+        #Working on the Sensor Reading
+        response_dict['sensor_readings'] = [
+            {
+                'name': 'Soil Moisture',
+                'description': 'The current light intensity.',
+                'readings': [f'{latest_entry.soil_moisture_reading}%']
+            },
+            {
+                'name': 'Light Intensity',
+                'description': 'The current light intensity.',
+                'readings': [f'{latest_entry.light_intensity_reading}%']
+            },
+            {
+                'name': 'Water Level',
+                'description': 'The current water level in the tank.',
+                'readings': [
+                    f'{latest_entry.water_level_reading * water_tank_max_level / 100} Litre',
+                    f'{latest_entry.water_level_reading}%']
+            },
+        ]
+
+        #Working on the reports section
+        lamp_intensity_state, water_pump_state = calculate_actuator_values(latest_entry.light_intensity_reading, latest_entry.soil_moisture_reading)
+        response_dict['reports'] = [
+            {
+                'title': 'Water Tank Report',
+                'header_text': 'Water Level',
+                'value': "-".join([one for one in response_dict['sensor_readings'][2]['readings']]),
+                'description': "With the current water level in the tank, it can last for another 7 days without any intervension"
+            },
+            {
+                'title': 'Water Pump Report',
+                'header_text': 'Pump State',
+                'value': water_pump_state,
+                'description': f'The water pump is currently {"turned on and watering the plant" if water_pump_state == True else "is not turned on."}'
+            },
+            {
+                'title': 'Light Source Report',
+                'header_text': 'Lamp Power',
+                'value': lamp_intensity_state,
+                'description': f'The light source is currently working at {lamp_intensity_state}% intensity. The light intensity depends on the time of day and the current intensity of the light in the room.'
+            }
+        ]
+
+        return JsonResponse(dict(response_dict), status=200)
+
+    else:
+        return JsonResponse({"status": 400, "response": generate_error_message('Endpoint only accepts get requests')}, status = 400)
+    
 @csrf_exempt
 def Override(request):
     '''
