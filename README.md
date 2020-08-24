@@ -105,7 +105,7 @@ The sensors ESP32 module uses this end point to send the data to it so that its 
 		      {
 		         "title":"Water Tank Report",
 		         "header_text":"Water Level",
-		         "value":"2.1 Litre-42%",
+		         "value":"2.1 Litre - 42%",
 		         "description":"With the current water level in the tank, it can last for another 7 days without any intervension"
 		      },
 		      {
