@@ -1,3 +1,4 @@
+
 # SmartPlantAPI
 
 This Github Repository is made by Multimedia University Capstone Project Group 2 and it has all of the server side code used as the cloud platform for this project.
@@ -39,10 +40,94 @@ The sensors ESP32 module uses this end point to send the data to it so that its 
            "entry count":7
         }
     ```
+### Endpoint: `/AppBasicData`
+
+- **Description:** This endpoint is responsible for providing all of the basic data about the plant to the smartphone application. This is data such as the latest sensor readings, And some reports on the equipment and the water tank.
+- **Method:** Get
+- **Expected Headers:**
+    -  **Plant-Id:** a unique identifier to each plant to identify the plant in the database and to ensure that multiple plants can be supported by the server.
+- **Expected Response**:
+    - **status:** 200 if the retrieval is done, 500 if it fails
+    - **metadata:** a dictionary of some metadata on the request
+	    - **last_reading_time:** the time that the last reading was made. Converted to the Malaysian timezone.
+    - **plant_state:**
+		- **state:** a verbal state of the plant, may either be happy, sad, or hungry
+		- **description:** a description of the above state
+	- **sensor_readings:** an array of dictionaries containing data on the sensors. entries in this array follow the following format
+		- **name:** the sensor name
+		- **description:** a description of what this sensor is used for
+		- **readings:** an array of the readings read by the sensor and  all of the possible unit conversions
+	- **reports:** an array of reports containing data on the equipment. Each report has the following format
+		- **title:** the title of the given report
+		- **header_text:** the header of the report
+		- **value:** the values of the given report
+		- **description:** a verbal description of the title and value of the report
+- **Sample Request:**
+    ```py
+    #A sample request for the application data
+    headers = {"Plant-Id": plant_id}
+    requests.get(url +  'AppBasicData', headers=headers).json()
     
+    #Sample Sucessful Response
+    >>> {
+		   "metadata":{
+		      "last_reading_time":"2020-08-21T15:21:36.941+08:00"
+		   },
+		   "plant_state":{
+		      "state":"Hungry",
+		      "description":"Your plant requires more soil moisture content to continue healthy growth."
+		   },
+		   "sensor_readings":[
+		      {
+		         "name":"Soil Moisture",
+		         "description":"The current light intensity.",
+		         "readings":[
+		            "12%"
+		         ]
+		      },
+		      {
+		         "name":"Light Intensity",
+		         "description":"The current light intensity.",
+		         "readings":[
+		            "89%"
+		         ]
+		      },
+		      {
+		         "name":"Water Level",
+		         "description":"The current water level in the tank.",
+		         "readings":[
+		            "2.1 Litre",
+		            "42%"
+		         ]
+		      }
+		   ],
+		   "reports":[
+		      {
+		         "title":"Water Tank Report",
+		         "header_text":"Water Level",
+		         "value":"2.1 Litre - 42%",
+		         "description":"With the current water level in the tank, it can last for another 7 days without any intervension"
+		      },
+		      {
+		         "title":"Water Pump Report",
+		         "header_text":"Pump State",
+		         "value":true,
+		         "description":"The water pump is currently turned on and watering the plant"
+		      },
+		      {
+		         "title":"Light Source Report",
+		         "header_text":"Lamp Power",
+		         "value":10,
+		         "description":"The light source is currently working at 10% intensity. The light intensity depends on the time of day and the current intensity of the light in the room."
+		      }
+		   ]
+		}
+	```
+- **Notes:** *The statistics endpoint is not this endpoint. Go through the documentation to find the endpoint used in the statistics*
+
 ### Endpoint: `/ActuatorData`
 
-- **Description:** This is the main endpoint used to provide data to the actuator side of things. This endpint is typically only used by the ESP32 module connected to the actuators. A different endpoint is used for the mobile application.
+- **Description:** This is the main endpoint used to provide data to the actuator side of things. This endpoint is typically only used by the ESP32 module connected to the actuators. A different endpoint is used for the mobile application.
 - **Method:** Get
 - **Expected Headers:**
     -  **Plant-Id:** a unique identifier to each plant to identify the plant in the database and to ensure that multiple plants can be supported by the server.
