@@ -70,58 +70,58 @@ The sensors ESP32 module uses this end point to send the data to it so that its 
     
     #Sample Sucessful Response
     >>> {
-		   "metadata":{
-		      "last_reading_time":"2020-08-21T15:21:36.941+08:00"
-		   },
-		   "plant_state":{
-		      "state":"Hungry",
-		      "description":"Your plant requires more soil moisture content to continue healthy growth."
-		   },
-		   "sensor_readings":[
-		      {
-		         "name":"Soil Moisture",
-		         "description":"The current light intensity.",
-		         "readings":[
-		            "12%"
-		         ]
-		      },
-		      {
-		         "name":"Light Intensity",
-		         "description":"The current light intensity.",
-		         "readings":[
-		            "89%"
-		         ]
-		      },
-		      {
-		         "name":"Water Level",
-		         "description":"The current water level in the tank.",
-		         "readings":[
-		            "2.1 Litre",
-		            "42%"
-		         ]
-		      }
-		   ],
-		   "reports":[
-		      {
-		         "title":"Water Tank Report",
-		         "header_text":"Water Level",
-		         "value":"2.1 Litre-42%",
-		         "description":"With the current water level in the tank, it can last for another 7 days without any intervension"
-		      },
-		      {
-		         "title":"Water Pump Report",
-		         "header_text":"Pump State",
-		         "value":true,
-		         "description":"The water pump is currently turned on and watering the plant"
-		      },
-		      {
-		         "title":"Light Source Report",
-		         "header_text":"Lamp Power",
-		         "value":10,
-		         "description":"The light source is currently working at 10% intensity. The light intensity depends on the time of day and the current intensity of the light in the room."
-		      }
-		   ]
-		}
+	   "metadata":{
+	      "last_reading_time":"2020-08-21T15:21:36.941+08:00"
+	   },
+	   "plant_state":{
+	      "state":"Hungry",
+	      "description":"Your plant requires more soil moisture content to continue healthy growth."
+	   },
+	   "sensor_readings":[
+	      {
+	         "name":"Soil Moisture",
+	         "description":"The current light intensity.",
+	         "readings":[
+	            "12%"
+	         ]
+	      },
+	      {
+	         "name":"Light Intensity",
+	         "description":"The current light intensity.",
+	         "readings":[
+	            "89%"
+	         ]
+	      },
+	      {
+	         "name":"Water Level",
+	         "description":"The current water level in the tank.",
+	         "readings":[
+	            "2.1 Litre",
+	            "42%"
+	         ]
+	      }
+	   ],
+	   "reports":[
+	      {
+	         "title":"Water Tank Report",
+	         "header_text":"Water Level",
+	         "value":"2.1 Litre-42%",
+	         "description":"With the current water level in the tank, it can last for another 7 days without any intervension"
+	      },
+	      {
+	         "title":"Water Pump Report",
+	         "header_text":"Pump State",
+	         "value":true,
+	         "description":"The water pump is currently turned on and watering the plant"
+	      },
+	      {
+	         "title":"Light Source Report",
+	         "header_text":"Lamp Power",
+	         "value":10,
+	         "description":"The light source is currently working at 10% intensity. The light intensity depends on the time of day and the current intensity of the light in the room."
+	      }
+	   ]
+	}
 	```
 - **Notes:** *The statistics endpoint is not this endpoint. Go through the documentation to find the endpoint used in the statistics*
 
