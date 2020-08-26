@@ -313,7 +313,7 @@ def app_basic_data(request):
                 'name': 'Water Level',
                 'description': 'The current water level in the tank.',
                 'readings': [
-                    f'{latest_entry.water_level_reading * water_tank_max_level / 100} Litre',
+                    f'{latest_entry.water_level_reading * water_tank_max_level / 100} L',
                     f'{latest_entry.water_level_reading}%']
             },
         ]
@@ -336,7 +336,7 @@ def app_basic_data(request):
             {
                 'title': 'Light Source Report',
                 'header_text': 'Lamp Power',
-                'value': lamp_intensity_state,
+                'value': f'{lamp_intensity_state}%',
                 'description': f'The light source is currently working at {lamp_intensity_state}% intensity. The light intensity depends on the time of day and the current intensity of the light in the room.'
             }
         ]
