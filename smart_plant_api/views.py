@@ -87,6 +87,16 @@ def calculate_actuator_values(light_intensity, soil_moisture):
     return (lamp_intensity_state, water_pump_state)
 
 #All ofthe following are the views methods
+def welcome_view(request):
+    '''
+    A very simple method used to verify that he server is up and running
+
+    Expected Response:
+        |- status: 200 or 500 depending on whether the server is online or not
+        |- response: a verbal response of the status.    
+    '''
+    return JsonResponse({'status': 200, 'response': 'Server is up and running'}, status=200)
+
 @csrf_exempt
 def add_entry(request):
     '''
@@ -105,7 +115,7 @@ def add_entry(request):
         Expected Response:
             |- status: 200 If the entry has been added sucessfully, 400 if the addition has failed
             |- response: a verbal response of the status.
-            |- entry count: the number of the entires that share the same Plant-Id
+            |- entry_count: the number of the entires that share the same Plant-Id
 
     Get: No get requests are allowed to this end point. A get request will result in a status 400 response
     '''
@@ -113,12 +123,22 @@ def add_entry(request):
         sensor_readings = json.loads(request.body)
         plant_id = request.headers.get('Plant-Id')
 
+        if sensor_readings.get('Soil Moisture') == None or sensor_readings.get('Light Intensity') == None or sensor_readings.get('Water Level') == None:
+            return JsonResponse({'status': 400,
+                                'response': generate_error_message('Not all payload items were provided')},
+                                status = 400)
+
+        if plant_id == None:
+            return JsonResponse({'status': 400,
+                                'response': generate_error_message('No Plant-Id provided in the request header')},
+                                status = 400)
+
         ReadingEntry(plant_id = plant_id, reading_date = timezone.now(), soil_moisture_reading = sensor_readings["Soil Moisture"], light_intensity_reading = sensor_readings["Light Intensity"], water_level_reading = sensor_readings["Water Level"]).save()
 
         entry_count = len(ReadingEntry.objects.all().filter(plant_id = request.headers['Plant-Id']))
         print(entry_count)
 
-        return JsonResponse({"status":200, "response": "Entry Added", "entry count": entry_count})
+        return JsonResponse({"status":200, "response": "Entry Added", "entry_count": entry_count})
     else:
         return JsonResponse({"status": 400, "response": generate_error_message("Endpoint only accepts post requests")}, status = 400)
 
@@ -154,13 +174,13 @@ def remove_entries(request):
                                 'response': generate_error_message('No Plant-Id provided in the request header')},
                                 status = 400)
 
-        admin_response = input(f'A request has been made to delete entries for the plant with plant-id {request.headers.get("Plant-Id")}\nAccept this request? (y/n)').lower()
+        admin_response = input(f'A request has been made to delete entries for the plant with plant-id {request.headers.get("Plant-Id")}\nAccept this request? (y/n): ').lower()
         if 'y' in admin_response:
             ReadingEntry.objects.filter(plant_id = request.headers.get('Plant-Id')).delete()
-            status = 200, 
+            status = 200
             response_message = 'Removal request has been accepted'
         else:
-            status = 500, 
+            status = 500 
             response_message = 'Removal request has been denied'
 
         return JsonResponse({'status': status,

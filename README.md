@@ -7,7 +7,7 @@ As a very quick rundown of this project, this project uses Django with an SQL li
 
 # API Documentation
 
-### Endpoint: `/AddEntry`
+### **Endpoint:** `/AddEntry`
 
 - **Description:** This is the end point that is responsible for the addition of the entries to the database. 
 The sensors ESP32 module uses this end point to send the data to it so that its stored in the database 
@@ -21,7 +21,7 @@ The sensors ESP32 module uses this end point to send the data to it so that its 
 - **Expected Response**:
     - **status:** 200 If the entry has been added sucessfully, 400 if the addition has failed
     - **response:**: a verbal response of the status.
-    - **entry count:** the number of the entires that share the same Plant-Id
+    - **entry_count:** the number of the entires that share the same Plant-Id
 - **Sample Request:**
     ```py
     #A sample of a post request where we send data to the server via the AddEntry endpoint
@@ -37,10 +37,10 @@ The sensors ESP32 module uses this end point to send the data to it so that its 
     >>> {
            "status":200,
            "response":"Entry Added",
-           "entry count":7
+           "entry_count":7
         }
     ```
-### Endpoint: `/AppBasicData`
+### **Endpoint:** `/AppBasicData`
 
 - **Description:** This endpoint is responsible for providing all of the basic data about the plant to the smartphone application. This is data such as the latest sensor readings, And some reports on the equipment and the water tank.
 - **Method:** Get
@@ -70,62 +70,62 @@ The sensors ESP32 module uses this end point to send the data to it so that its 
     
     #Sample Sucessful Response
     >>> {
-		   "metadata":{
-		      "last_reading_time":"2020-08-21T15:21:36.941+08:00"
-		   },
-		   "plant_state":{
-		      "state":"Hungry",
-		      "description":"Your plant requires more soil moisture content to continue healthy growth."
-		   },
-		   "sensor_readings":[
-		      {
-		         "name":"Soil Moisture",
-		         "description":"The current light intensity.",
-		         "readings":[
-		            "12%"
-		         ]
-		      },
-		      {
-		         "name":"Light Intensity",
-		         "description":"The current light intensity.",
-		         "readings":[
-		            "89%"
-		         ]
-		      },
-		      {
-		         "name":"Water Level",
-		         "description":"The current water level in the tank.",
-		         "readings":[
-		            "2.1 Litre",
-		            "42%"
-		         ]
-		      }
-		   ],
-		   "reports":[
-		      {
-		         "title":"Water Tank Report",
-		         "header_text":"Water Level",
-		         "value":"2.1 Litre - 42%",
-		         "description":"With the current water level in the tank, it can last for another 7 days without any intervension"
-		      },
-		      {
-		         "title":"Water Pump Report",
-		         "header_text":"Pump State",
-		         "value":true,
-		         "description":"The water pump is currently turned on and watering the plant"
-		      },
-		      {
-		         "title":"Light Source Report",
-		         "header_text":"Lamp Power",
-		         "value":10,
-		         "description":"The light source is currently working at 10% intensity. The light intensity depends on the time of day and the current intensity of the light in the room."
-		      }
-		   ]
-		}
+            "metadata":{
+                "last_reading_time":"2020-08-21T15:21:36.941+08:00"
+            },
+            "plant_state":{
+                "state":"Hungry",
+                "description":"Your plant requires more soil moisture content to continue healthy growth."
+            },
+            "sensor_readings":[
+                {
+                    "name":"Soil Moisture",
+                    "description":"The current light intensity.",
+                    "readings":[
+                    "12%"
+                    ]
+                },
+                {
+                    "name":"Light Intensity",
+                    "description":"The current light intensity.",
+                    "readings":[
+                    "89%"
+                    ]
+                },
+                {
+                    "name":"Water Level",
+                    "description":"The current water level in the tank.",
+                    "readings":[
+                    "2.1 Litre",
+                    "42%"
+                    ]
+                }
+            ],
+            "reports":[
+                {
+                    "title":"Water Tank Report",
+                    "header_text":"Water Level",
+                    "value":"2.1 Litre - 42%",
+                    "description":"With the current water level in the tank, it can last for another 7 days without any intervension"
+                },
+                {
+                    "title":"Water Pump Report",
+                    "header_text":"Pump State",
+                    "value":true,
+                    "description":"The water pump is currently turned on and watering the plant"
+                },
+                {
+                    "title":"Light Source Report",
+                    "header_text":"Lamp Power",
+                    "value":10,
+                    "description":"The light source is currently working at 10% intensity. The light intensity depends on the time of day and the current intensity of the light in the room."
+                }
+            ]
+        }
 	```
 - **Notes:** *The statistics endpoint is not this endpoint. Go through the documentation to find the endpoint used in the statistics*
 
-### Endpoint: `/ActuatorData`
+### **Endpoint:** `/ActuatorData`
 
 - **Description:** This is the main endpoint used to provide data to the actuator side of things. This endpoint is typically only used by the ESP32 module connected to the actuators. A different endpoint is used for the mobile application.
 - **Method:** Get
@@ -152,7 +152,7 @@ The sensors ESP32 module uses this end point to send the data to it so that its 
     ```
 - **Notes:** *This method must first check if there has been an override request made to the actuators by the smartphone app. if such a thing has been made, then the server trusts the user's decision for a given amount of time and then goes back again to regulate the plant state. To change how long an override request is valid, the* `override_validity` *variable in the* `override_data()` *function is changed to showcase such change.*
     
-### Endpoint: `/RemoveOverride`
+### **Endpoint:** `/RemoveOverride`
 
 - **Description:** This is an API endpoint that removes all of the override requests made to the server for a specific plant id.
 - **Method:** Delete
@@ -176,7 +176,7 @@ The sensors ESP32 module uses this end point to send the data to it so that its 
         }
     ```
     
-### Endpoint: `/Override`
+### **Endpoint:** `/Override`
 
 - **Description:** This method is used to send an override request to server. Bascially telling the server "I want to have control over my own plant, you dont worry about regulating anything" In this case, the user assumes full control over the plant until the override request expires
 - **Method:** Post

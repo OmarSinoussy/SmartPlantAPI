@@ -19,6 +19,7 @@ import smart_plant_api.views as smart_api_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', smart_api_views.welcome_view),
     path('AddEntry', smart_api_views.add_entry),
     path('RemoveEntries', smart_api_views.remove_entries),
     path('ActuatorData', smart_api_views.actuator_data),
