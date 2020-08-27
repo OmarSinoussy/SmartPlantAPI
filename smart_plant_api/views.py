@@ -4,7 +4,7 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from smart_plant_api.models import ReadingEntry, OverrideRequest
-import json, collections, pytz
+import json, collections, pytz, random
 
 #All of the following are helper methods
 def generate_error_message(error_message):
@@ -141,6 +141,73 @@ def add_entry(request):
         return JsonResponse({"status":200, "response": "Entry Added", "entry_count": entry_count})
     else:
         return JsonResponse({"status": 400, "response": generate_error_message("Endpoint only accepts post requests")}, status = 400)
+
+def statistical_data(request):
+    '''
+    This is an endpoint that is used to provide some statiscal data on the plant and its needs. Examples of what it provides are water level statistics, light sensor readings,
+    and soil moisture sensor readings. This endpoint is typically used by the smartphone app.
+
+    Endpoint: /StatisticalData
+
+    Get:
+        Expected Headers:
+            |- Plant-Id: a unique identifier to each plant to identify the plant in the database and to ensure 
+        Expected Payload: None
+        Expected Response:
+            |- status: 200 if the request is sucessful, and 400 if the request made is in an invalid format
+            |- response: a verbal response of the status.
+            |- graphs: an array of graphs of the following data
+                |- title: the title of the graph
+                |- y_axis_unit: the the unit of the y_axis
+                |- x_axis_unit: the the unit of the x_axis
+                |- gradient_from: a hex color used for the gradient coloring
+                |- gradient_to: a hex color used for the gradient coloring
+                |- x_axis_data: the data used on the x_axis
+                |- y_axis_data: the data used on the y_axis
+
+    Post: No post requests are allowed to this end point. A post request will result in a status 400 response    
+    '''
+    def generate_graph_data(title, y_axis_unit, x_axis_unit, gradient_from, gradient_to, x_axis_data, y_axis_data):
+        '''
+        A simple helper method local to this view that is used to generate the graph data sent back as a response
+        Why do we use this method? To ensure consistent naming of the keys of the dictionary
+        '''
+        return {
+            'title': f'{title} Statistics',
+            'y_axis_unit': y_axis_unit,
+            'x_axis_unit': x_axis_unit,
+            'gradient_from': gradient_from,
+            'gradient_to': gradient_to,
+            'x_axis_data': x_axis_data,
+            'y_axis_data': y_axis_data
+        }
+
+    if request.method == "GET":
+        if request.headers.get('Plant-Id') == None:
+            return JsonResponse({'status': 400,
+                                'response': generate_error_message('No Plant-Id provided in the request header')},
+                                status = 400)
+
+        #Generating some random data for now. This portion will be replaced for the final integration with the DB
+        number_of_data = 7
+        x_axis = ['Monday', 'Tuesday', 'Wednessday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        light_intensity_stats = [random.randint(10, 80) for one in range(number_of_data)]
+        soil_moisture_stats = [random.randint(10, 80) for one in range(number_of_data)]
+        water_level_stats = [random.randint(10, 80) for one in range(number_of_data)]
+        #End generating random data
+
+        #Returning the data obtained from the database (at this point this data is random. When the DB integration happens, it wont be any longer)
+        return JsonResponse({
+            'status': 200,
+            'response': 'success',
+            'graphs': [
+                generate_graph_data(title='Light Intensity', y_axis_unit='%', x_axis_unit='', gradient_from="", gradient_to="", x_axis_data=x_axis, y_axis_data=light_intensity_stats),
+                generate_graph_data(title='Soil Moisture', y_axis_unit='%', x_axis_unit='', gradient_from="", gradient_to="", x_axis_data=x_axis, y_axis_data=soil_moisture_stats),
+                generate_graph_data(title='Water Level', y_axis_unit='L', x_axis_unit='', gradient_from="", gradient_to="", x_axis_data=x_axis, y_axis_data=water_level_stats)
+            ]
+        })
+    else:
+        return JsonResponse({"status": 400, "response": generate_error_message('Endpoint only accepts get requests')}, status = 400)
 
 @csrf_exempt
 def remove_entries(request):

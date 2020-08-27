@@ -21,6 +21,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', smart_api_views.welcome_view),
     path('AddEntry', smart_api_views.add_entry),
+    path('StatisticalData', smart_api_views.statistical_data),
     path('RemoveEntries', smart_api_views.remove_entries),
     path('ActuatorData', smart_api_views.actuator_data),
     path('AppBasicData', smart_api_views.app_basic_data),
