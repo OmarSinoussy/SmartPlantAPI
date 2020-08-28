@@ -41,8 +41,8 @@ def override_data(plant_id):
     Notes: if there are no valid override requests, data is equal to None 
     '''
     override_validity = 5 #How long an override request is valid in minutes
-    override_requests = OverrideRequest.objects.all().filter(plant_id = plant_id)
-    if len(override_requests) == 0 or (timezone.now() - override_requests[len(override_requests) - 1].request_time).seconds / 60 > override_validity:
+    override_requests = OverrideRequest.objects.filter(plant_id = plant_id)
+    if len(override_requests) == 0 or (timezone.now().date() - override_requests[len(override_requests) - 1].request_time).seconds / 60 > override_validity:
         return {
             "isOverridden": False,
             "data": None
@@ -81,7 +81,7 @@ def calculate_actuator_values(light_intensity, soil_moisture):
         lamp_intensity_state = 10
     
     #Controlling the water pump.
-    if soil_moisture < 75:
+    if soil_moisture < 65:
         water_pump_state = True
     
     return (lamp_intensity_state, water_pump_state)
@@ -134,9 +134,9 @@ def add_entry(request):
                                 status = 400)
 
         ReadingEntry(plant_id = plant_id, reading_date = timezone.now(), soil_moisture_reading = sensor_readings["Soil Moisture"], light_intensity_reading = sensor_readings["Light Intensity"], water_level_reading = sensor_readings["Water Level"]).save()
+        print(f'\nSoil Moisture: {sensor_readings["Soil Moisture"]}', f'\nLight Intensity: {sensor_readings["Light Intensity"]}', f'\nWater Level: {sensor_readings["Water Level"]}\n')
 
         entry_count = len(ReadingEntry.objects.all().filter(plant_id = request.headers['Plant-Id']))
-        print(entry_count)
 
         return JsonResponse({"status":200, "response": "Entry Added", "entry_count": entry_count})
     else:
@@ -309,7 +309,7 @@ def actuator_data(request):
 
             last_entry = entries[len(entries) - 1]  #the Django ORM rejects any negative indexing, so the only way to get he last index is to do entries[len(entries) - 1]
             lamp_intensity_state, water_pump_state = calculate_actuator_values(last_entry.light_intensity_reading, last_entry.soil_moisture_reading)
-        
+
             return JsonResponse({'status': 200, 
                                 'override': False, 
                                 "Lamp Intensity State": lamp_intensity_state, 

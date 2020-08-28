@@ -40,6 +40,38 @@ The sensors ESP32 module uses this end point to send the data to it so that its 
            "entry_count":7
         }
     ```
+
+### **Endpoint:** `/StatisticalData`
+
+- **Description:** This is an endpoint that is used to provide some statiscal data on the plant and its needs. Examples of what it provides are water level statistics, light sensor readings, and soil moisture sensor readings. This endpoint is typically used by the smartphone app.
+- **Method:** Get
+- **Expected Headers:**
+    -  **Plant-Id:** a unique identifier to each plant to identify the plant in the database and to ensure that multiple plants can be supported by the server.
+- **Expected Response**:
+    - **status:** 200 if the request is sucessful, and 400 if the request made is in an invalid format
+        - **response:** a verbal response of the status.
+        - **graphs:** an array of graphs of the following data
+            - **title:** the title of the graph
+            - **y_axis_unit:** the the unit of the y_axis
+            - **x_axis_unit:** the the unit of the x_axis
+            - **gradient_from:** a hex color used for the gradient coloring
+            - **gradient_to:** a hex color used for the gradient coloring
+            - **x_axis_data:** the data used on the x_axis
+            - **y_axis_data:** the data used on the y_axis
+- **Sample Request:**
+    ```py
+    #Getting statistical data on the plants form the StatisticalData endpoint 
+    headers = {'Plant-Id': "debugPlant"}
+    requests.get(url + "StatisticalData", headers=headers).json()
+    
+    #Sample Sucessful Response
+    >>> {
+           "status":200,
+           "response":"Entry Added",
+           "entry_count":7
+        }
+    ```
+
 ### **Endpoint:** `/AppBasicData`
 
 - **Description:** This endpoint is responsible for providing all of the basic data about the plant to the smartphone application. This is data such as the latest sensor readings, And some reports on the equipment and the water tank.
