@@ -66,9 +66,85 @@ The sensors ESP32 module uses this end point to send the data to it so that its 
     
     #Sample Sucessful Response
     >>> {
-           "status":200,
-           "response":"Entry Added",
-           "entry_count":7
+            "status":200,
+            "response":"success",
+            "graphs":[
+                {
+                    "title":"Light Intensity Statistics",
+                    "y_axis_unit":"%",
+                    "x_axis_unit":"",
+                    "gradient_from":"",
+                    "gradient_to":"",
+                    "x_axis_data":[
+                        "Monday",
+                        "Tuesday",
+                        "Wednessday",
+                        "Thursday",
+                        "Friday",
+                        "Saturday",
+                        "Sunday"
+                    ],
+                    "y_axis_data":[
+                        42,
+                        17,
+                        47,
+                        68,
+                        40,
+                        28,
+                        40
+                    ]
+                },
+                {
+                    "title":"Soil Moisture Statistics",
+                    "y_axis_unit":"%",
+                    "x_axis_unit":"",
+                    "gradient_from":"",
+                    "gradient_to":"",
+                    "x_axis_data":[
+                        "Monday",
+                        "Tuesday",
+                        "Wednessday",
+                        "Thursday",
+                        "Friday",
+                        "Saturday",
+                        "Sunday"
+                    ],
+                    "y_axis_data":[
+                        43,
+                        38,
+                        39,
+                        23,
+                        28,
+                        26,
+                        32
+                    ]
+                },
+                {
+                    "title":"Water Level Statistics",
+                    "y_axis_unit":"L",
+                    "x_axis_unit":"",
+                    "gradient_from":"",
+                    "gradient_to":"",
+                    "x_axis_data":[
+                        "Monday",
+                        "Tuesday",
+                        "Wednessday",
+                        "Thursday",
+                        "Friday",
+                        "Saturday",
+                        "Sunday"
+                    ],
+                    "y_axis_data":[
+                        49,
+                        46,
+                        61,
+                        19,
+                        11,
+                        52,
+                        29
+                    ]
+                }
+            ]
         }
     ```
 
