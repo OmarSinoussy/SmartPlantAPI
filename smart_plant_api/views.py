@@ -4,10 +4,10 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from smart_plant_api.models import ReadingEntry, OverrideRequest
-import json, collections, pytz, random
+import json, collections, pytz, random, datetime, statistics
 
 #All of the following are helper methods
-def generate_error_message(error_message):
+def generate_error_message(error_message) -> str:
     '''
     A method used to generate error messages to provide more info in the error message with a high consistency
 
@@ -21,7 +21,7 @@ def generate_error_message(error_message):
     github_page = "https://github.com/OmarSinoussy/SmartPlantAPI"
     return f"{error_message}. Please visit {github_page} for API documentation and more information on this error"
 
-def override_data(plant_id):
+def override_data(plant_id) -> dict:
     '''
     This method gets data on whether the plant_id has a valid override request. If the plant has any override requests. It will return its data
 
@@ -56,7 +56,7 @@ def override_data(plant_id):
         }
     }
 
-def calculate_actuator_values(light_intensity, soil_moisture):
+def calculate_actuator_values(light_intensity, soil_moisture) -> tuple:
     '''
     A method used to calculate the lamp_intensity_state, and the water_pump_state based on the light_intensity and the soil moisture
 
@@ -85,6 +85,18 @@ def calculate_actuator_values(light_intensity, soil_moisture):
         water_pump_state = True
     
     return (lamp_intensity_state, water_pump_state)
+
+def print_v(string, end="\n") -> None:
+    '''
+    A very simple method used to print a string if the verbouse parameter in the settings is set to true, othrewise it doesnt print it.
+
+    Arguments:
+        |- string: the string to print
+        |- end: the end of the string
+
+    '''
+    if settings.VERBOUSE:
+        print(string, end=end)
 
 #All ofthe following are the views methods
 def welcome_view(request):
@@ -134,7 +146,7 @@ def add_entry(request):
                                 status = 400)
 
         ReadingEntry(plant_id = plant_id, reading_date = timezone.now(), soil_moisture_reading = sensor_readings["Soil Moisture"], light_intensity_reading = sensor_readings["Light Intensity"], water_level_reading = sensor_readings["Water Level"]).save()
-        print(f'\nSoil Moisture: {sensor_readings["Soil Moisture"]}', f'\nLight Intensity: {sensor_readings["Light Intensity"]}', f'\nWater Level: {sensor_readings["Water Level"]}\n')
+        print_v(f'Soil Moisture: {sensor_readings["Soil Moisture"]}\nLight Intensity: {sensor_readings["Light Intensity"]}\nWater Level: {sensor_readings["Water Level"]}\n')
 
         entry_count = len(ReadingEntry.objects.all().filter(plant_id = request.headers['Plant-Id']))
 
@@ -152,6 +164,7 @@ def statistical_data(request):
     Get:
         Expected Headers:
             |- Plant-Id: a unique identifier to each plant to identify the plant in the database and to ensure 
+            |- Period: An optional header that defines the length of time to get the data for. Defaults to 7 days when this parameter is not defined.
         Expected Payload: None
         Expected Response:
             |- status: 200 if the request is sucessful, and 400 if the request made is in an invalid format
@@ -167,7 +180,7 @@ def statistical_data(request):
 
     Post: No post requests are allowed to this end point. A post request will result in a status 400 response    
     '''
-    def generate_graph_data(title, y_axis_unit, x_axis_unit, gradient_from, gradient_to, x_axis_data, y_axis_data):
+    def generate_graph_data(title, y_axis_unit, x_axis_unit, gradient_from, gradient_to, x_axis_data, y_axis_data) -> dict:
         '''
         A simple helper method local to this view that is used to generate the graph data sent back as a response
         Why do we use this method? To ensure consistent naming of the keys of the dictionary
@@ -182,6 +195,35 @@ def statistical_data(request):
             'y_axis_data': y_axis_data
         }
 
+    def get_reading_entry_average(reading_entry_array) -> dict:
+        '''
+        A simple helper method that can be used to find the average from the given reading entry array given
+
+        Arguments:
+            |- reading_entry_array: an array of reading entries 
+    
+        Returns: 
+            |- (dict): of the data. The following is the format of the dict
+                {
+                    soil_moisture_reading: (float)
+                    light_intensity_reading: (float)
+                    water_level_reading: (float)
+                }
+        '''
+        light_intensity_readings = []
+        soil_moisture_readings = []
+        water_level_readings = []
+        for entry in reading_entry_array:
+            light_intensity_readings.append(entry.light_intensity_reading)
+            soil_moisture_readings.append(entry.soil_moisture_reading)
+            water_level_readings.append(entry.water_level_reading)
+
+        return {
+            'light_intensity_reading': statistics.mean(light_intensity_readings if len(soil_moisture_readings) != 0 else [0]),
+            'soil_moisture_reading': statistics.mean(soil_moisture_readings if len(soil_moisture_readings) != 0 else [0]),
+            'water_level_reading': statistics.mean(water_level_readings if len(soil_moisture_readings) != 0 else [0])
+        }
+
     if request.method == "GET":
         if request.headers.get('Plant-Id') == None:
             return JsonResponse({'status': 400,
@@ -194,6 +236,13 @@ def statistical_data(request):
         light_intensity_stats = [random.randint(10, 80) for one in range(number_of_data)]
         soil_moisture_stats = [random.randint(10, 80) for one in range(number_of_data)]
         water_level_stats = [random.randint(10, 80) for one in range(number_of_data)]
+
+        todays_date = timezone.now().date()
+        number_of_data = request.headers.get('Period') if request.headers.get('Period') != None else 7
+
+        applicable_dates = [todays_date - datetime.timedelta(days=i) for i in range(number_of_data-1, -1, -1)]
+        applicable_data = [ReadingEntry.objects.filter(plant_id = request.headers.get('Plant-Id'), reading_date = date) for date in applicable_dates]
+        applicable_data = list(map(get_reading_entry_average, applicable_data))
         #End generating random data
 
         #Returning the data obtained from the database (at this point this data is random. When the DB integration happens, it wont be any longer)
@@ -310,10 +359,13 @@ def actuator_data(request):
             last_entry = entries[len(entries) - 1]  #the Django ORM rejects any negative indexing, so the only way to get he last index is to do entries[len(entries) - 1]
             lamp_intensity_state, water_pump_state = calculate_actuator_values(last_entry.light_intensity_reading, last_entry.soil_moisture_reading)
 
-            return JsonResponse({'status': 200, 
-                                'override': False, 
-                                "Lamp Intensity State": lamp_intensity_state, 
-                                "Water Pump State": water_pump_state})
+            response = {'status': 200, 
+                        'override': False, 
+                        "Lamp Intensity State": lamp_intensity_state, 
+                        "Water Pump State": water_pump_state}
+
+            print_v(f'{response}\n')
+            return JsonResponse(response)
 
     else:
         return JsonResponse({"status": 400, "response": generate_error_message('Endpoint only accepts get requests')}, status = 400)
@@ -361,7 +413,7 @@ def app_basic_data(request):
         water_tank_max_level = 5
 
         #Working on the metadata
-        response_dict['metadata']['last_reading_time'] = latest_entry.reading_date.astimezone(pytz.timezone('Asia/Kuala_Lumpur'))
+        response_dict['metadata']['last_reading_time'] = latest_entry.reading_date
 
         #Working on the plant state
         plant_state = {
@@ -417,7 +469,7 @@ def app_basic_data(request):
             {
                 'title': 'Water Pump Report',
                 'header_text': 'Pump State',
-                'value': water_pump_state,
+                'value': "On" if water_pump_state else "Off",
                 'description': f'The water pump is currently {"turned on and watering the plant" if water_pump_state == True else "is not turned on."}'
             },
             {
@@ -459,6 +511,7 @@ def Override(request):
     if request.method == "POST":
         lamp_intensity_state = json.loads(request.body).get('Lamp Intensity State')
         water_pump_state = json.loads(request.body).get('Water Pump State')
+        print_v(f"Lamp Intensity: {lamp_intensity_state}\tWater Pump: {water_pump_state}")
 
         #only triggers if one of the above terms are not provided        
         if lamp_intensity_state == None or water_pump_state == None:

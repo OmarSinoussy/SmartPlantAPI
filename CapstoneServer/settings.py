@@ -25,6 +25,9 @@ SECRET_KEY = 'xz9&pdt^-=z+w%2k^)-plkc+8^p-xtab-u_mv_30^-2##5ar%c'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# A variable that defines if the server should print to the command line or not
+VERBOUSE = True
+
 ALLOWED_HOSTS = ['206.81.2.205']
 
 
