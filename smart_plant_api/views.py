@@ -81,6 +81,7 @@ def calculate_actuator_values(light_intensity, soil_moisture) -> tuple:
         lamp_intensity_state = 10
     
     #Controlling the water pump.
+    # if soil_moisture < 100:
     if soil_moisture < 65:
         water_pump_state = True
     
@@ -192,7 +193,11 @@ def statistical_data(request):
             'gradient_from': gradient_from,
             'gradient_to': gradient_to,
             'x_axis_data': x_axis_data,
-            'y_axis_data': y_axis_data
+            'y_axis_data': y_axis_data,
+            'minimum': min(y_axis_data),
+            'maximum': max(y_axis_data),
+            "average": int(sum(y_axis_data) / len(y_axis_data)),
+            'todays': y_axis_data[-1]
         }
 
     def get_reading_entry_average(reading_entry_array) -> dict:
@@ -230,29 +235,26 @@ def statistical_data(request):
                                 'response': generate_error_message('No Plant-Id provided in the request header')},
                                 status = 400)
 
-        #Generating some random data for now. This portion will be replaced for the final integration with the DB
-        number_of_data = 7
-        x_axis = ['Monday', 'Tuesday', 'Wednessday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-        light_intensity_stats = [random.randint(10, 80) for one in range(number_of_data)]
-        soil_moisture_stats = [random.randint(10, 80) for one in range(number_of_data)]
-        water_level_stats = [random.randint(10, 80) for one in range(number_of_data)]
-
         todays_date = timezone.now().date()
         number_of_data = request.headers.get('Period') if request.headers.get('Period') != None else 7
 
-        applicable_dates = [todays_date - datetime.timedelta(days=i) for i in range(number_of_data-1, -1, -1)]
+        applicable_dates = [todays_date - datetime.timedelta(days=i) for i in range(0, number_of_data, 1)][::-1]
+        x_axis = [date.strftime("%a") for date in applicable_dates]
         applicable_data = [ReadingEntry.objects.filter(plant_id = request.headers.get('Plant-Id'), reading_date = date) for date in applicable_dates]
         applicable_data = list(map(get_reading_entry_average, applicable_data))
-        #End generating random data
+
+        light_intensity_stats = [int(data['light_intensity_reading']) for data in applicable_data]
+        soil_moisture_stats = [int(data['soil_moisture_reading']) for data in applicable_data]
+        water_level_stats = [int(data['water_level_reading']) for data in applicable_data]
 
         #Returning the data obtained from the database (at this point this data is random. When the DB integration happens, it wont be any longer)
         return JsonResponse({
             'status': 200,
             'response': 'success',
             'graphs': [
-                generate_graph_data(title='Light Intensity', y_axis_unit='%', x_axis_unit='', gradient_from="", gradient_to="", x_axis_data=x_axis, y_axis_data=light_intensity_stats),
-                generate_graph_data(title='Soil Moisture', y_axis_unit='%', x_axis_unit='', gradient_from="", gradient_to="", x_axis_data=x_axis, y_axis_data=soil_moisture_stats),
-                generate_graph_data(title='Water Level', y_axis_unit='L', x_axis_unit='', gradient_from="", gradient_to="", x_axis_data=x_axis, y_axis_data=water_level_stats)
+                generate_graph_data(title='Light Intensity', y_axis_unit='%', x_axis_unit='', gradient_from="#4e54c8", gradient_to="#8f94fb", x_axis_data=x_axis, y_axis_data=light_intensity_stats),
+                generate_graph_data(title='Soil Moisture', y_axis_unit='%', x_axis_unit='', gradient_from="#ff9966", gradient_to="#ff5e62", x_axis_data=x_axis, y_axis_data=soil_moisture_stats),
+                generate_graph_data(title='Water Level', y_axis_unit='%', x_axis_unit='', gradient_from="#FC466B", gradient_to="#3F5EFB", x_axis_data=x_axis, y_axis_data=water_level_stats)
             ]
         })
     else:
@@ -342,10 +344,13 @@ def actuator_data(request):
 
         #Override the sensors and act upon the user input
         if override_request['isOverridden']:
-            return JsonResponse({'status': 200, 
-                                'override': True, 
-                                "Lamp Intensity State": override_request['data']['Lamp Intensity State'], 
-                                "Water Pump State": override_request['data']['Water Pump State']})
+            response = {'status': 200, 
+                        'override': True, 
+                        "Lamp Intensity State": override_request['data']['Lamp Intensity State'], 
+                        "Water Pump State": override_request['data']['Water Pump State']}
+
+            print_v(response)
+            return JsonResponse(response)
 
         #The following section is the processing done based on the last entry added 
         else:
