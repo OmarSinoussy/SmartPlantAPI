@@ -158,6 +158,7 @@ The sensors ESP32 module uses this end point to send the data to it so that its 
     - **status:** 200 if the retrieval is done, 500 if it fails
     - **metadata:** a dictionary of some metadata on the request
 	    - **last_reading_time:** the time that the last reading was made. Converted to the Malaysian timezone.
+        - **override:** a boolean that defines if there is an active override or not
     - **plant_state:**
 		- **state:** a verbal state of the plant, may either be happy, sad, or hungry
 		- **description:** a description of the above state
