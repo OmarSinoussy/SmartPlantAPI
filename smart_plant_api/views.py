@@ -254,7 +254,7 @@ def statistical_data(request):
             'graphs': [
                 generate_graph_data(title='Light Intensity', y_axis_unit='%', x_axis_unit='', gradient_from="#4e54c8", gradient_to="#8f94fb", x_axis_data=x_axis, y_axis_data=light_intensity_stats),
                 generate_graph_data(title='Soil Moisture', y_axis_unit='%', x_axis_unit='', gradient_from="#ff9966", gradient_to="#ff5e62", x_axis_data=x_axis, y_axis_data=soil_moisture_stats),
-                generate_graph_data(title='Water Level', y_axis_unit='%', x_axis_unit='', gradient_from="#FC466B", gradient_to="#3F5EFB", x_axis_data=x_axis, y_axis_data=water_level_stats)
+                generate_graph_data(title='Water Level', y_axis_unit='%', x_axis_unit='', gradient_from="#536976", gradient_to="#292E49", x_axis_data=x_axis, y_axis_data=water_level_stats)
             ]
         })
     else:
@@ -392,6 +392,7 @@ def app_basic_data(request):
             |- status: 200 if the retrieval is done, 500 if it fails
             |- metadata: a dictionary of some metadata on the request
                 |- last_reading_time: the time that the last reading was made. Converted to the Malaysian timezone.
+                |- override: a boolean that defines if there is an active override or not
             |- plant_state:
                 |- state: a verbal state of the plant, may either be happy, sad, or hungry
                 |- description: a description of the above state
@@ -463,7 +464,14 @@ def app_basic_data(request):
         ]
 
         #Working on the reports section
-        lamp_intensity_state, water_pump_state = calculate_actuator_values(latest_entry.light_intensity_reading, latest_entry.soil_moisture_reading)
+        #Getting the last override request
+        override_info = override_data(request.headers.get('Plant-Id'))
+        response_dict['metadata']['override'] = override_info['isOverridden']
+        if override_info['isOverridden'] == True:
+            lamp_intensity_state, water_pump_state = override_info['data']['Lamp Intensity State'], override_info['data']['Water Pump State']
+        else:
+            lamp_intensity_state, water_pump_state = calculate_actuator_values(latest_entry.light_intensity_reading, latest_entry.soil_moisture_reading)
+
         response_dict['reports'] = [
             {
                 'title': 'Water Tank Report',
@@ -555,3 +563,8 @@ def RemoveOverride(request):
 
     else:
         return JsonResponse({"status": 400, "response": generate_error_message('Endpoint only accepts delete requests')}, status = 400)
+
+'''
+TODO:
+    - Ensure that the override requests actually expire in 5 minutes. Some early testing showed that they dont. If they do not find where this bug happens and work on it.
+'''
