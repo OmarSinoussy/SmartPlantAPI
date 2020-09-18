@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from smart_plant_api.models import ReadingEntry, OverrideRequest
+from smart_plant_api.models import ReadingEntry, OverrideRequest, TokenPlantIDBind
 import json, collections, pytz, random, datetime, statistics
 
 #All of the following are helper methods
@@ -563,6 +563,52 @@ def RemoveOverride(request):
 
     else:
         return JsonResponse({"status": 400, "response": generate_error_message('Endpoint only accepts delete requests')}, status = 400)
+
+@csrf_exempt
+def bindPlantIdToken(request):
+    '''
+    This endpoint is responsible for binding a plant_ids with expo tokens used for push notifications. 
+
+    EndPoint: /BindPlantIdToeken
+
+    Post:
+        Expected Headers:
+            |- Plant-Id: a unique identifier to each plant to identify the plant in the database and to ensure 
+        Expected Payload:
+            |- Token: the expo token provided by the app.
+        Expected Response:
+            |- status: 200 If the entry has been added sucessfully, 400 or 500 if the removal has failed
+            |- response: a verbal response of the status.
+            |- tokens: The expo push notifications tokens that are registered and bound to this plant_id
+    '''
+    if request.method == "POST":
+        token = json.loads(request.body)['Token']
+        
+        if request.headers.get('Plant-Id') == None:
+            return JsonResponse({'status': 400,
+                                'response': generate_error_message('No Plant-Id provided in the request header')},
+                                status = 400)
+        if token == None or 'Expo' not in token:
+            return JsonResponse({'status': 400,
+                                'response': generate_error_message('No valid expo token was provided in the request')},
+                                status = 400)
+
+        bind = TokenPlantIDBind.objects.filter(plant_id = request.headers.get('Plant-Id'))
+        if (len(bind) == 0):
+            #No binds in the database. Create a bind and save it to the database
+            TokenPlantIDBind(plant_id = request.headers.get('Plant-Id'), tokens = token).save()
+        else:
+            #A bind already exists in the database. Update the bind.
+            tokens = bind[0].tokens
+            if token not in tokens:
+                bind.update(tokens = ",".join([tokens, token]))
+
+        return JsonResponse({'status': 200,
+                            'response': 'Token has been bound to the plant_id sucessfully',
+                            'tokens': bind[0].tokens})
+
+    else:
+        return JsonResponse({"status": 400, "response": generate_error_message('Endpoint only accepts post requests')}, status = 400)
 
 '''
 TODO:
