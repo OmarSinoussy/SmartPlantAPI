@@ -18,3 +18,11 @@ class OverrideRequest(models.Model):
 class TokenPlantIDBind(models.Model):
     plant_id = models.CharField(max_length=32)
     tokens = models.TextField()
+
+class NotificationSent(models.Model):
+    plant_id = models.CharField(max_length=32)
+    reason = models.TextField()
+    time = models.DateTimeField()
+
+    def minutes_since_notification(self,current_time):
+        return (current_time - self.time).seconds / 60

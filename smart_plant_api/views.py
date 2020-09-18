@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from smart_plant_api.models import ReadingEntry, OverrideRequest, TokenPlantIDBind
+from smart_plant_api.models import ReadingEntry, OverrideRequest, TokenPlantIDBind, NotificationSent
 import json, collections, pytz, random, datetime, statistics
 
 from exponent_server_sdk import DeviceNotRegisteredError
@@ -177,7 +177,8 @@ def welcome_view(request):
 def add_entry(request):
     '''
     This is the end point that is responsible for the addition of the entries to the database.
-    The sensors ESP32 module uses this end point to send the data to it so that its stored in the database 
+    The sensors ESP32 module uses this end point to send the data to it so that its stored in the database.
+    This endpoint is also responsbile for sending the notifications.
 
     Endpoint: /AddEntry
 
@@ -195,6 +196,22 @@ def add_entry(request):
 
     Get: No get requests are allowed to this end point. A get request will result in a status 400 response
     '''
+    def check_and_send(monitored_quantity_name, monitored_quantity_value, minimum_value, title, message, wait_time):
+        if monitored_quantity_value < minimum_value:
+            notifications_sent = NotificationSent.objects.filter(plant_id = plant_id)
+            
+            shouldContinue = True
+            for notification in notifications_sent:
+                if notification.reason == monitored_quantity_name and notification.minutes_since_notification(timezone.now()) < wait_time:
+                    shouldContinue = False
+                    break
+
+            if shouldContinue:
+                NotificationSent(plant_id = plant_id, reason = monitored_quantity_name, time=timezone.now()).save()
+                tokens = TokenPlantIDBind.objects.filter(plant_id = request.headers.get('Plant-Id'))[0].tokens.split(',')
+                for token in tokens:
+                    send_notification(token, title, message)
+
     if request.method == "POST":
         sensor_readings = json.loads(request.body)
         plant_id = request.headers.get('Plant-Id')
@@ -211,8 +228,11 @@ def add_entry(request):
 
         ReadingEntry(plant_id = plant_id, reading_date = timezone.now(), soil_moisture_reading = sensor_readings["Soil Moisture"], light_intensity_reading = sensor_readings["Light Intensity"], water_level_reading = sensor_readings["Water Level"]).save()
         print_v(f'Soil Moisture: {sensor_readings["Soil Moisture"]}\nLight Intensity: {sensor_readings["Light Intensity"]}\nWater Level: {sensor_readings["Water Level"]}\n')
+        entry_count = len(ReadingEntry.objects.all().filter(plant_id = plant_id))
 
-        entry_count = len(ReadingEntry.objects.all().filter(plant_id = request.headers['Plant-Id']))
+        #Checking for the water level sensor and the soil moisture and sending notifications if they're too low.
+        check_and_send('Water Level', sensor_readings["Water Level"], 20, "Water Level is too low", f"Your current water level is {sensor_readings['Water Level']}. Please refill the tank soon to keep your plant healthy", wait_time = 10)
+        check_and_send('Soil Moisture', sensor_readings["Soil Moisture"], 20, "Your plant needs to be watered", f"Your current soil moisture is {sensor_readings['Soil Moisture']}. Please water your plant as soon as possible to ensure that it is kept healthy", wait_time = 10)
 
         return JsonResponse({"status":200, "response": "Entry Added", "entry_count": entry_count})
     else:
