@@ -210,7 +210,10 @@ def add_entry(request):
                 NotificationSent(plant_id = plant_id, reason = monitored_quantity_name, time=timezone.now()).save()
                 tokens = TokenPlantIDBind.objects.filter(plant_id = request.headers.get('Plant-Id'))[0].tokens.split(',')
                 for token in tokens:
-                    send_notification(token, title, message)
+                    try:
+                        send_notification(token, title, message)
+                    except:
+                        continue
 
     if request.method == "POST":
         sensor_readings = json.loads(request.body)
@@ -231,8 +234,9 @@ def add_entry(request):
         entry_count = len(ReadingEntry.objects.all().filter(plant_id = plant_id))
 
         #Checking for the water level sensor and the soil moisture and sending notifications if they're too low.
-        check_and_send('Water Level', sensor_readings["Water Level"], 20, "Water Level is too low", f"Your current water level is {sensor_readings['Water Level']}. Please refill the tank soon to keep your plant healthy", wait_time = 10)
-        check_and_send('Soil Moisture', sensor_readings["Soil Moisture"], 20, "Your plant needs to be watered", f"Your current soil moisture is {sensor_readings['Soil Moisture']}. Please water your plant as soon as possible to ensure that it is kept healthy", wait_time = 10)
+        wait_time = 10 #The wait time is in minutes
+        check_and_send('Water Level', sensor_readings["Water Level"], 20, "Water Level is too low", f"Your current water level is {sensor_readings['Water Level']}. Please refill the tank soon to keep your plant healthy", wait_time = wait_time)
+        check_and_send('Soil Moisture', sensor_readings["Soil Moisture"], 20, "Your plant needs to be watered", f"Your current soil moisture is {sensor_readings['Soil Moisture']}. Please water your plant as soon as possible to ensure that it is kept healthy", wait_time = wait_time)
 
         return JsonResponse({"status":200, "response": "Entry Added", "entry_count": entry_count})
     else:
