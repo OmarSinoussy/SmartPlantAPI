@@ -254,7 +254,7 @@ def add_entry(request):
         entries = ReadingEntry.objects.filter(plant_id = plant_id)
         old_water_level = entries[len(entries) - 2].water_level_reading
         
-        if old_water_level - sensor_readings["Water Level"] > 20:
+        if old_water_level - sensor_readings["Water Level"] > 25:
             notifications_sent = NotificationSent.objects.filter(plant_id = plant_id)
                 
             shouldContinue = True
