@@ -249,6 +249,30 @@ def add_entry(request):
         check_and_send('Water Level', sensor_readings["Water Level"], 20, "Water Level is too low", f"Your current water level is {sensor_readings['Water Level']}. Please refill the tank soon to keep your plant healthy", wait_time = wait_time)
         check_and_send('Soil Moisture', sensor_readings["Soil Moisture"], 20, "Your plant needs to be watered", f"Your current soil moisture is {sensor_readings['Soil Moisture']}. Please water your plant as soon as possible to ensure that it is kept healthy", wait_time = wait_time)
 
+
+        #Leaking Tank Notification process
+        entries = ReadingEntry.objects.filter(plant_id = plant_id)
+        old_water_level = entries[len(entries) - 2].water_level_reading
+        
+        if old_water_level - sensor_readings["Water Level"] > 20:
+            notifications_sent = NotificationSent.objects.filter(plant_id = plant_id)
+                
+            shouldContinue = True
+            for notification in notifications_sent:
+                if notification.reason == "Leaking Tank" and notification.minutes_since(timezone.now()) < wait_time:
+                    shouldContinue = False
+                    break
+            
+            if shouldContinue:
+                NotificationSent(plant_id = plant_id, reason = "Leaking Tank", time=timezone.now()).save()
+                tokens = TokenPlantIDBind.objects.filter(plant_id = request.headers.get('Plant-Id'))[0].tokens.split(',')
+                for token in tokens:
+                    try:
+                        send_notification(token, "Possible leaking tank", f"Your water level went from {old_water_level} to {sensor_readings['Water Level']} in a short while which could mean that a leak is happening. Please check your tank to ensure it is safe.")
+                    except:
+                        continue
+        #Leaking tank notification completed
+
         return JsonResponse({"status":200, "response": "Entry Added", "entry_count": entry_count})
     else:
         return JsonResponse({"status": 400, "response": generate_error_message("Endpoint only accepts post requests")}, status = 400)
