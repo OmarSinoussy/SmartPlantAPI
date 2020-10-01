@@ -10,10 +10,13 @@ class ReadingEntry(models.Model):
 
 class OverrideRequest(models.Model):
     plant_id = models.CharField(max_length=32)
-    request_time = models.DateField()
+    request_time = models.DateTimeField()
 
     lamp_intensity_state = models.IntegerField()
     water_pump_state = models.BooleanField()
+
+    def override_since(self, current_time) -> float:
+        return (current_time - self.request_time).seconds / 60
 
 class TokenPlantIDBind(models.Model):
     plant_id = models.CharField(max_length=32)
@@ -24,5 +27,5 @@ class NotificationSent(models.Model):
     reason = models.TextField()
     time = models.DateTimeField()
 
-    def minutes_since_notification(self,current_time):
+    def minutes_since(self,current_time):
         return (current_time - self.time).seconds / 60

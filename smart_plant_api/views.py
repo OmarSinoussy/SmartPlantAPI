@@ -50,7 +50,10 @@ def override_data(plant_id) -> dict:
     '''
     override_validity = 5 #How long an override request is valid in minutes
     override_requests = OverrideRequest.objects.filter(plant_id = plant_id)
-    if len(override_requests) == 0 or (timezone.now().date() - override_requests[len(override_requests) - 1].request_time).seconds / 60 > override_validity:
+
+    print(override_requests[len(override_requests) - 1].override_since(timezone.now()))
+
+    if len(override_requests) == 0 or override_requests[len(override_requests) - 1].override_since(timezone.now()) > override_validity:
         return {
             "isOverridden": False,
             "data": None
@@ -210,7 +213,7 @@ def add_entry(request):
             
             shouldContinue = True
             for notification in notifications_sent:
-                if notification.reason == monitored_quantity_name and notification.minutes_since_notification(timezone.now()) < wait_time:
+                if notification.reason == monitored_quantity_name and notification.minutes_since(timezone.now()) < wait_time:
                     shouldContinue = False
                     break
 
