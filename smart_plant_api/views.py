@@ -64,7 +64,7 @@ def override_data(plant_id) -> dict:
         }
     }
 
-def calculate_actuator_values(light_intensity, soil_moisture) -> tuple:
+def calculate_actuator_values(light_intensity, soil_moisture, old_soil_moisture) -> tuple:
     '''
     A method used to calculate the lamp_intensity_state, and the water_pump_state based on the light_intensity and the soil moisture
 
@@ -89,9 +89,17 @@ def calculate_actuator_values(light_intensity, soil_moisture) -> tuple:
         lamp_intensity_state = 10
     
     #Controlling the water pump.
-    # if soil_moisture < 100:
-    if soil_moisture < 65:
+    limits = [45, 75]
+    difference = soil_moisture - old_soil_moisture
+    
+    if soil_moisture <= min(limits):
         water_pump_state = True
+    elif soil_moisture >= max(limits):
+        water_pump_state = False
+    else:
+        print("Special Case")
+        print(f"Soil Moisture: {soil_moisture}, Old Soil Moisture: {old_soil_moisture},")
+        water_pump_state = difference > 0 if abs(difference) > 2 else False
     
     return (lamp_intensity_state, water_pump_state)
 
@@ -449,7 +457,8 @@ def actuator_data(request):
                                     status = 400) 
 
             last_entry = entries[len(entries) - 1]  #the Django ORM rejects any negative indexing, so the only way to get he last index is to do entries[len(entries) - 1]
-            lamp_intensity_state, water_pump_state = calculate_actuator_values(last_entry.light_intensity_reading, last_entry.soil_moisture_reading)
+            second_to_last = entries[len(entries) - 2]
+            lamp_intensity_state, water_pump_state = calculate_actuator_values(last_entry.light_intensity_reading, last_entry.soil_moisture_reading, second_to_last.soil_moisture_reading)
 
             response = {'status': 200, 
                         'override': False, 
@@ -503,6 +512,7 @@ def app_basic_data(request):
                                 status = 400)
 
         latest_entry = ReadingEntry.objects.filter(plant_id = request.headers.get('Plant-Id')).order_by('-id')[0]
+        second_to_last = ReadingEntry.objects.filter(plant_id = request.headers.get('Plant-Id')).order_by('-id')[1]
         water_tank_max_level = 5
 
         #Working on the metadata
@@ -557,7 +567,7 @@ def app_basic_data(request):
         if override_info['isOverridden'] == True:
             lamp_intensity_state, water_pump_state = override_info['data']['Lamp Intensity State'], override_info['data']['Water Pump State']
         else:
-            lamp_intensity_state, water_pump_state = calculate_actuator_values(latest_entry.light_intensity_reading, latest_entry.soil_moisture_reading)
+            lamp_intensity_state, water_pump_state = calculate_actuator_values(latest_entry.light_intensity_reading, latest_entry.soil_moisture_reading, second_to_last.soil_moisture_reading)
 
         response_dict['reports'] = [
             {
