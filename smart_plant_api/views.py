@@ -545,27 +545,6 @@ def app_basic_data(request):
         #Working on the metadata
         response_dict['metadata']['last_reading_time'] = latest_entry.reading_date
 
-        #Working on the plant state
-        plant_state = {
-            'state': "",
-            'description': ""
-        }
-        
-        if latest_entry.soil_moisture_reading > 50 and latest_entry.light_intensity_reading > 50:
-            plant_state['state'] = "Happy"
-            plant_state['description'] = "Your plant is well watered, has adequate light exposure and is healthier than ever!"
-        elif latest_entry.soil_moisture_reading < 50:
-            plant_state['state'] = "Hungry"
-            plant_state['description'] += "Your plant requires more soil moisture content to continue healthy growth."
-        elif latest_entry.light_intensity_reading < 50:
-            plant_state['state'] = "Sad"
-            if plant_state['description'] == "":
-                plant_state['description'] = "Your plant requires more light in order for it to continue healthy growth."
-            else:
-                plant_state['description'].replace(' to continue healthy growth.', 'and more light in order for it to continue healthy growth.')
-
-        response_dict['plant_state'] = plant_state
-
         #Working on the Sensor Reading
         response_dict['sensor_readings'] = [
             {
@@ -616,6 +595,33 @@ def app_basic_data(request):
                 'description': f'The light source is currently working at {lamp_intensity_state}% intensity. The light intensity depends on the time of day and the current intensity of the light in the room.'
             }
         ]
+
+        #Working on the plant state
+        plant_state = {
+            'state': "",
+            'description': ""
+        }
+
+        if (latest_entry.soil_moisture_reading < 45 and latest_entry.light_intensity_reading < 25):
+            plant_state['state'] = "Happy"
+            plant_state['description'] = "Your plant is well watered, has adequate light exposure and is healthier than ever!"
+        elif latest_entry.soil_moisture_reading < 45 and water_pump_state == False and latest_entry.light_intensity_reading < 25 and lamp_intensity_state < 30:
+            plant_state['state'] = "Worried"
+            plant_state['description'] = "Your plant does not have enough water or light intensity to continue healthy growth"
+        elif latest_entry.soil_moisture_reading < 45 and water_pump_state == False:
+            plant_state['state'] = "Hungry"
+            plant_state['description'] = "Your plant requires more soil moisture content to continue healthy growth"
+        elif latest_entry.light_intensity_reading < 25 and lamp_intensity_state < 30:
+            plant_state['state'] = "Sad"
+            plant_state['description'] = "Your plant requires more light in order for it to continue healthy growth"
+        elif latest_entry.water_level_reading < 20:
+            plant_state['state'] = "Worried"
+            plant_state['description'] = "Your plant needs more water in the water tank to feel safe"
+        else:
+            plant_state['state'] = "Happy"
+            plant_state['description'] = "Your plant is well watered, has adequate light exposure and is healthier than ever!"
+
+        response_dict['plant_state'] = plant_state
 
         return JsonResponse(dict(response_dict), status=200)
 
@@ -760,10 +766,3 @@ Latest Sensor Readnigs:
 
     print(data)
     return JsonResponse({'status': 200, 'response': data})
-
-
-
-'''
-TODO:
-    - Ensure that the override requests actually expire in 5 minutes. Some early testing showed that they dont. If they do not find where this bug happens and work on it.
-'''
