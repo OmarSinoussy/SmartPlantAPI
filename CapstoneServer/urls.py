@@ -28,4 +28,5 @@ urlpatterns = [
     path('Override', smart_api_views.Override),
     path('RemoveOverride', smart_api_views.RemoveOverride),
     path('BindPlantIdToken', smart_api_views.bindPlantIdToken),
+    path('Uptime', smart_api_views.uptime),
 ]

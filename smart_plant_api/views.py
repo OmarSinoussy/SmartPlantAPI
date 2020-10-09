@@ -14,6 +14,8 @@ from exponent_server_sdk import PushServerError
 from requests.exceptions import ConnectionError
 from requests.exceptions import HTTPError
 
+startup_time = timezone.now()
+
 #All of the following are helper methods
 def generate_error_message(error_message) -> str:
     '''
@@ -50,8 +52,6 @@ def override_data(plant_id) -> dict:
     '''
     override_validity = 5 #How long an override request is valid in minutes
     override_requests = OverrideRequest.objects.filter(plant_id = plant_id)
-
-    print(override_requests[len(override_requests) - 1].override_since(timezone.now()))
 
     if len(override_requests) == 0 or override_requests[len(override_requests) - 1].override_since(timezone.now()) > override_validity:
         return {
@@ -540,7 +540,7 @@ def app_basic_data(request):
 
         latest_entry = ReadingEntry.objects.filter(plant_id = request.headers.get('Plant-Id')).order_by('-id')[0]
         second_to_last = ReadingEntry.objects.filter(plant_id = request.headers.get('Plant-Id')).order_by('-id')[1]
-        water_tank_max_level = 5
+        water_tank_max_level = 1
 
         #Working on the metadata
         response_dict['metadata']['last_reading_time'] = latest_entry.reading_date
@@ -582,7 +582,7 @@ def app_basic_data(request):
                 'name': 'Water Level',
                 'description': 'The current water level in the tank.',
                 'readings': [
-                    f'{latest_entry.water_level_reading * water_tank_max_level / 100} L',
+                    f'{round(latest_entry.water_level_reading * water_tank_max_level / 100, 1)} L',
                     f'{latest_entry.water_level_reading}%']
             },
         ]
@@ -601,7 +601,7 @@ def app_basic_data(request):
                 'title': 'Water Tank Report',
                 'header_text': 'Water Level',
                 'value': " - ".join([one for one in response_dict['sensor_readings'][2]['readings']]),
-                'description': "With the current water level in the tank, it can last for another 7 days without any intervension"
+                'description': "The amount of water present in the water tank and used to water the plant."
             },
             {
                 'title': 'Water Pump Report',
@@ -733,6 +733,35 @@ def bindPlantIdToken(request):
 
     else:
         return JsonResponse({"status": 400, "response": generate_error_message('Endpoint only accepts post requests')}, status = 400)
+
+def uptime(request):
+    '''
+    All requests made to this endpoint are asumed to be get requests for simplicity and assume a plant-id of "debugPlant"
+    '''
+    current_time = timezone.now()
+    latest_entry = ReadingEntry.objects.filter(plant_id = "debugPlant").order_by('-id')[0]
+
+    diff = str(datetime.timedelta(seconds = (current_time - startup_time).seconds)).split(':')
+
+    data = f"""
+Current time: {current_time}
+Initial request: {startup_time}
+
+System has been running for {(current_time - startup_time).seconds} seconds.
+    {diff[0]} Hours
+    {diff[1]} Minutes
+    {diff[2]} Seconds
+
+Latest Sensor Readnigs:
+    Soil Moisture Sensor: {latest_entry.soil_moisture_reading}
+    Light Intensity Sensor: {latest_entry.light_intensity_reading}
+    Water Level Sensor: {latest_entry.water_level_reading}
+"""
+
+    print(data)
+    return JsonResponse({'status': 200, 'response': data})
+
+
 
 '''
 TODO:
