@@ -1,7 +1,7 @@
 
 # SmartPlantAPI
 
-This Github Repository is made by Multimedia University Capstone Project Group 2 and it has all of the server side code used as the cloud platform for this project.
+This Github Repository is made for Capstone Project Group 2 and it has all of the server side code used as the cloud platform for this project.
 
 As a very quick rundown of this project, this project uses Django with an SQL lite database as a way to allow communication between the sensors, actuators, and the smartphone application developed for this project.
 
